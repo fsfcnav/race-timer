@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dot Race Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+
+        .game-area {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        #gameCanvas {
+            background: linear-gradient(to right, #87ceeb 0%, #87ceeb 100%);
+            border: 3px solid #333;
+            border-radius: 10px;
+            flex: 1;
+            min-width: 300px;
+            display: block;
+            cursor: none;
+        }
+
+        .control-panel {
+            flex: 1;
+            min-width: 250px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .stats {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-line {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 1.1em;
+        }
+
+        .stat-label {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .stat-value {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .timer {
+            font-size: 2em;
+            text-align: center;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 100px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+        }
+
+        .btn-success:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e53e3e;
+            transform: translateY(-2px);
+        }
+
+        .settings {
+            border-top: 2px solid #ddd;
+            padding-top: 15px;
+        }
+
+        .setting-item {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+            font-size: 0.9em;
+        }
+
+        input[type="range"],
+        input[type="color"],
+        select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            font-size: 0.9em;
+        }
+
+        input[type="range"] {
+            padding: 0;
+            height: 6px;
+        }
+
+        .range-value {
+            font-size: 0.8em;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .recording-indicator {
+            background: #f56565;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            animation: pulse 1s infinite;
+            display: none;
+        }
+
+        .recording-indicator.active {
+            display: block;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .game-area {
+                flex-direction: column;
+            }
+
+            #gameCanvas {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Dot Race</h1>
+        
+        <div class="game-area">
+            <canvas id="gameCanvas" width="400" height="200"></canvas>
+            
+            <div class="control-panel">
+                <div class="stats">
+                    <div class="timer" id="timer">0.00s</div>
+                    <div class="stat-line">
+                        <span class="stat-label">Distance:</span>
+                        <span class="stat-value" id="distance">0px</span>
+                    </div>
+                    <div class="stat-line">
+                        <span class="stat-label">Speed:</span>
+                        <span class="stat-value" id="speed">0 px/s</span>
+                    </div>
+                    <div class="stat-line">
+                        <span class="stat-label">Status:</span>
+                        <span class="stat-value" id="status">Ready</span>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-primary" id="startBtn">Start Race</button>
+                    <button class="btn-danger" id="stopBtn" disabled>Stop</button>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-success" id="recordBtn">Record Video</button>
+                    <button class="btn-primary" id="resetBtn">Reset</button>
+                </div>
+
+                <div class="recording-indicator" id="recordingIndicator">
+                    🔴 Recording...
+                </div>
+
+                <div class="settings">
+                    <h3 style="margin-bottom: 10px; color: #333;">Settings</h3>
+                    
+                    <div class="setting-item">
+                        <label for="dotColor">Dot Color:</label>
+                        <input type="color" id="dotColor" value="#ff6b00">
+                    </div>
+
+                    <div class="setting-item">
+                        <label for="obstacleColor">Obstacle Color:</label>
+                        <input type="color" id="obstacleColor" value="#ff0000">
+                    </div>
+
+                    <div class="setting-item">
+                        <label for="speed">Speed:</label>
+                        <input type="range" id="speed" min="1" max="10" value="5">
+                        <div class="range-value"><span id="speedValue">5</span>x</div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label for="difficulty">Difficulty:</label>
+                        <select id="difficulty">
+                            <option value="easy">Easy</option>
+                            <option value="normal" selected>Normal</option>
+                            <option value="hard">Hard</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game state
+        const game = {
+            running: false,
+            recording: false,
+            startTime: 0,
+            dotX: 50,
+            dotY: canvas.height / 2,
+            dotWidth: 40,
+            dotHeight: 30,
+            dotColor: '#ff6b00',
+            obstacleColor: '#ff0000',
+            obstacles: [],
+            finishLine: 350,
+            gameSpeed: 5,
+            difficulty: 'normal',
+            mediaRecorder: null,
+            recordedChunks: [],
+            lastSpawnTime: 0
+        };
+
+        // UI elements
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const recordBtn = document.getElementById('recordBtn');
+        const timerDisplay = document.getElementById('timer');
+        const distanceDisplay = document.getElementById('distance');
+        const speedDisplay = document.getElementById('speed');
+        const statusDisplay = document.getElementById('status');
+        const recordingIndicator = document.getElementById('recordingIndicator');
+        const dotColorInput = document.getElementById('dotColor');
+        const obstacleColorInput = document.getElementById('obstacleColor');
+        const speedInput = document.getElementById('speed');
+        const speedValueDisplay = document.getElementById('speedValue');
+        const difficultyInput = document.getElementById('difficulty');
+
+        // Event listeners
+        startBtn.addEventListener('click', startRace);
+        stopBtn.addEventListener('click', stopRace);
+        resetBtn.addEventListener('click', resetRace);
+        recordBtn.addEventListener('click', toggleRecording);
+        dotColorInput.addEventListener('change', (e) => {
+            game.dotColor = e.target.value;
+        });
+        obstacleColorInput.addEventListener('change', (e) => {
+            game.obstacleColor = e.target.value;
+        });
+        speedInput.addEventListener('change', (e) => {
+            game.gameSpeed = parseFloat(e.target.value);
+            speedValueDisplay.textContent = game.gameSpeed;
+        });
+        difficultyInput.addEventListener('change', (e) => {
+            game.difficulty = e.target.value;
+        });
+
+        // Keyboard control
+        document.addEventListener('keydown', (e) => {
+            if (game.running) {
+                if (e.key === ' ' || e.key === 'ArrowUp') {
+                    game.dotY = Math.max(0, game.dotY - 15);
+                    e.preventDefault();
+                }
+            }
+        });
+
+        // Mouse control
+        canvas.addEventListener('mousemove', (e) => {
+            if (game.running) {
+                const rect = canvas.getBoundingClientRect();
+                const mouseY = e.clientY - rect.top;
+                game.dotY = Math.max(0, Math.min(canvas.height - game.dotHeight, mouseY - game.dotHeight / 2));
+            }
+        });
+
+        // Touch control
+        canvas.addEventListener('touchmove', (e) => {
+            if (game.running) {
+                e.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const touchY = e.touches[0].clientY - rect.top;
+                game.dotY = Math.max(0, Math.min(canvas.height - game.dotHeight, touchY - game.dotHeight / 2));
+            }
+        });
+
+        function startRace() {
+            if (!game.running) {
+                game.running = true;
+                game.startTime = Date.now();
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                recordBtn.disabled = true;
+                statusDisplay.textContent = 'Racing!';
+                
+                if (game.recording) {
+                    game.mediaRecorder.start();
+                }
+            }
+        }
+
+        function stopRace() {
+            game.running = false;
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            statusDisplay.textContent = 'Finished';
+            
+            if (game.recording && game.mediaRecorder.state === 'recording') {
+                game.mediaRecorder.stop();
+            }
+        }
+
+        function resetRace() {
+            game.running = false;
+            game.dotX = 50;
+            game.dotY = canvas.height / 2;
+            game.obstacles = [];
+            game.startTime = 0;
+            game.lastSpawnTime = 0;
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            recordBtn.disabled = false;
+            timerDisplay.textContent = '0.00s';
+            distanceDisplay.textContent = '0px';
+            speedDisplay.textContent = '0 px/s';
+            statusDisplay.textContent = 'Ready';
+            render();
+        }
+
+        function toggleRecording() {
+            if (!game.recording) {
+                startRecording();
+            } else {
+                stopRecording();
+            }
+        }
+
+        function startRecording() {
+            game.recordedChunks = [];
+            const stream = canvas.captureStream(30);
+            game.mediaRecorder = new MediaRecorder(stream, {
+                mimeType: 'video/webm'
+            });
+
+            game.mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    game.recordedChunks.push(event.data);
+                }
+            };
+
+            game.mediaRecorder.onstop = () => {
+                const blob = new Blob(game.recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `dot-race-${new Date().getTime()}.webm`;
+                link.click();
+                URL.revokeObjectURL(url);
+                recordingIndicator.classList.remove('active');
+            };
+
+            game.recording = true;
+            recordBtn.textContent = 'Stop Recording';
+            recordingIndicator.classList.add('active');
+            recordBtn.disabled = false;
+        }
+
+        function stopRecording() {
+            if (game.mediaRecorder && game.mediaRecorder.state === 'recording') {
+                game.mediaRecorder.stop();
+            }
+            game.recording = false;
+            recordBtn.textContent = 'Record Video';
+            recordBtn.disabled = false;
+        }
+
+        function spawnObstacle() {
+            const difficultyMultiplier = {
+                easy: 0.5,
+                normal: 1,
+                hard: 1.5
+            };
+            const spawnRate = 120 * difficultyMultiplier[game.difficulty];
+            
+            if (
